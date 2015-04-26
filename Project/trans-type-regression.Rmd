@@ -1,0 +1,71 @@
+---
+title: "Exponential Distribution Analysis Project"
+author: "Kaylee Walsh"
+date: "April 25, 2015"
+output: pdf_document
+---
+
+# Overview
+
+Motor Trends is investigating the effect transmission type has on the fuel efficiency in a vehicle. To do this, we will explore the `mtcars` data set and build a regression model, then show regression adjusted with transmission type.
+
+# Exploration
+
+```{r, echo = T}
+data(mtcars)
+str(mtcars)
+```
+
+This dataset contains 32 observations with 11 variables. For a parsimonious model I am choosing to regress with the variable with the highest correlation to mpg, `wt`.
+```{r}
+mpg_cors <- cor(mtcars)[1, ]; mpg_cors
+regressor <- mpg_cors[abs(mpg_cors) == max(abs(mpg_cors[mpg_cors != 1]))]; regressor
+```
+
+
+# Likelihood Ratio Test
+
+```{r}
+fit1 <- lm(mpg ~ wt, mtcars)
+fit2 <- lm(mpg ~ wt + factor(am), mtcars)
+```
+
+Here we've built two models, one unadjusted and one adjusted with the `am` variable. Using a likelihood ratio test through the `anova()` function we can compare the significance of adding in transmission type to the model.
+
+```{r}
+anova(fit1, fit2)
+summary(fit1)$coef
+summary(fit2)$coef
+```
+
+We observe that this variable does not bear significance to a good fit for the model. 
+Indeed we see in the coefficients after adjustment there is little change to the model in introducing `am`.
+Let's explore further through plotting the adjustment.
+
+# Adjustment
+
+```{r}
+plot(mtcars$wt, mtcars$mpg, type = 'n', frame = FALSE, main = "Fuel Efficiency v Weight by Transmission Type", xlab = "Weight (1000 lb)", ylab = "Fuel Efficiency (mpg)")
+abline(lm(mpg ~ wt, mtcars), lwd = 2)
+abline(h = mean(mtcars[mtcars$am == 0, ]$mpg), lwd = 3)
+abline(h = mean(mtcars[mtcars$am == 1, ]$mpg), lwd = 3)
+abline(coef(fit2)[1], coef(fit2)[2], lwd = 3)
+abline(coef(fit2)[1] + coef(fit2)[3], coef(fit2)[2], lwd = 3)
+points(mtcars[mtcars$am == 0,]$wt, mtcars[mtcars$am == 0,]$mpg, pch = 21, col = 'black', bg = 'lightblue', cex = 2)
+points(mtcars[mtcars$am == 1,]$wt, mtcars[mtcars$am == 1,]$mpg, pch = 21, col = 'black', bg = 'salmon', cex = 2)
+```
+
+As shown here the two groups really are not comparable since they do not overlap domains significantly. I conclude an answer cannot be drawn from this model even though the difference in means between the two groups is `r round(abs( mean(mtcars[mtcars$am == 1, ]$mpg) - mean(mtcars[mtcars$am == 0, ]$mpg)), 2)` mpg.
+
+
+# Residuals
+
+```{r}
+plot(fit2$residuals ~ mtcars$wt, main = "Residuals", xlab = "Weight (1000lbs)", ylab = "Residual")
+```
+
+From the residual plot we see that there is no clear pattern in error, thus the fit is not exhibiting any clear bias or heteroscedasity.
+
+# Executive Summary
+
+Overall there is clear relation between weight and mpg, however between the transmission groups there is not sufficient overlap between the group's domains in order to make reasonable comparisons. As a straight difference, the difference between the means is `r round(abs( mean(mtcars[mtcars$am == 1, ]$mpg) - mean(mtcars[mtcars$am == 0, ]$mpg)), 2)` mpg with the manual transmission having a higher average in mpg. The model does not create any sort of biasness or heterscedasity as was shown by the residual plot.
